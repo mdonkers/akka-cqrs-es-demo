@@ -24,7 +24,8 @@ object Build extends AutoPlugin {
       "-deprecation",
       "-language:_",
       "-target:jvm-1.8",
-      "-encoding", "UTF-8"
+      "-encoding", "UTF-8",
+      "-Xexperimental"
     ),
     unmanagedSourceDirectories.in(Compile) := Vector(scalaSource.in(Compile).value),
     unmanagedSourceDirectories.in(Test) := Vector(scalaSource.in(Test).value),

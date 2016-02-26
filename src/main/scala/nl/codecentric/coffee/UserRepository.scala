@@ -16,7 +16,7 @@
 
 package nl.codecentric.coffee
 
-import akka.actor.ActorLogging
+import akka.actor.{ Props, ActorLogging }
 import akka.persistence.PersistentActor
 
 object UserRepository {
@@ -31,6 +31,10 @@ object UserRepository {
 
   case class UserExists(name: String)
 
+  final val Name = "user-repository"
+
+  def props(): Props = Props(new UserRepository())
+
 }
 
 /**
@@ -44,8 +48,11 @@ class UserRepository extends PersistentActor with ActorLogging {
   private var users = Set.empty[User]
 
   override def receiveCommand: Receive = {
-    case GetUsers                                      => sender() ! users
-    case AddUser(name) if users.exists(_.name == name) => sender() ! UserExists(name)
+    case GetUsers =>
+      log.debug("received GetUsers command")
+      sender() ! users
+    case AddUser(name) if users.exists(_.name == name) =>
+      sender() ! UserExists(name)
     case AddUser(name) =>
       log.info(s"Adding new user with name; $name")
       val user = User(name)

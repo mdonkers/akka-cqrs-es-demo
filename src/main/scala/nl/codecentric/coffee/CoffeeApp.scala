@@ -16,15 +16,10 @@
 
 package nl.codecentric.coffee
 
-import akka.actor.{ ActorRef, Props, ActorSystem }
-import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.StatusCodes
-import akka.stream.ActorMaterializer
-import akka.pattern.ask
-import akka.util.Timeout
+import akka.actor._
 
 import scala.concurrent.Await
-import scala.concurrent.duration.{ Duration, DurationInt }
+import scala.concurrent.duration.Duration
 
 /**
  * @author Miel Donkers (miel.donkers@codecentric.nl)
@@ -32,37 +27,39 @@ import scala.concurrent.duration.{ Duration, DurationInt }
 object CoffeeApp {
   def main(args: Array[String]): Unit = {
     implicit val system = ActorSystem("coffee")
-    implicit val mat = ActorMaterializer()
 
-    val userRepositoryActor = system.actorOf(Props(new UserRepository), "user-repository")
+    system.actorOf(Props(new Master), "coffee-app-master")
 
-    Http(system).bindAndHandle(route(userRepositoryActor), "127.0.0.1", 8080)
     Await.ready(system.whenTerminated, Duration.Inf)
   }
+}
 
-  private def route(userRepository: ActorRef) = {
-    import de.heikoseeberger.akkahttpcirce.CirceSupport._
-    import akka.http.scaladsl.server.Directives._
-    import io.circe.generic.auto._
+class Master extends Actor with ActorLogging with ActorSettings {
+  override val supervisorStrategy = SupervisorStrategy.stoppingStrategy
 
-    implicit val timeout = Timeout(1.second)
+  private val userRepository = context.watch(createUserRepository())
+  context.watch(createHttpService(userRepository))
 
-    // format: OFF
-    pathPrefix("users") {
-      get {
-        complete {
-          (userRepository ? UserRepository.GetUsers).mapTo[Set[UserRepository.User]]
-        }
-      } ~
-      post {
-        entity(as[UserRepository.User]) { user =>
-          onSuccess(userRepository ? UserRepository.AddUser(user.name)) {
-            case UserRepository.UserAdded(_) => complete(StatusCodes.Created)
-            case UserRepository.UserExists(_) => complete(StatusCodes.Conflict)
-          }
-        }
-      }
-    }
-    // format: ON
+  log.info("Up and running")
+
+  override def receive = {
+    case Terminated(actor) => onTerminated(actor)
+  }
+
+  protected def createUserRepository(): ActorRef = {
+    context.actorOf(UserRepository.props(), UserRepository.Name)
+  }
+
+  protected def createHttpService(userRepositoryActor: ActorRef): ActorRef = {
+    import settings.httpService._
+    context.actorOf(
+      HttpService.props(address, port, selfTimeout, userRepositoryActor),
+      HttpService.Name
+    )
+  }
+
+  protected def onTerminated(actor: ActorRef): Unit = {
+    log.error("Terminating the system because {} terminated!", actor)
+    context.system.terminate()
   }
 }
