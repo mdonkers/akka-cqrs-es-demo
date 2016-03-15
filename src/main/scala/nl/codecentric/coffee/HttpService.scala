@@ -27,13 +27,14 @@ import akka.pattern.{ ask, pipe }
 import akka.util.Timeout
 import de.heikoseeberger.akkahttpcirce.CirceSupport
 import nl.codecentric.coffee.swagger.SwaggerDocService
+import nl.codecentric.coffee.util.CorsSupport
 import scala.concurrent.ExecutionContext
 import io.swagger.annotations._
 
 /**
  * @author Miel Donkers (miel.donkers@codecentric.nl)
  */
-object HttpService {
+object HttpService extends CorsSupport {
 
   private[coffee] case object Stop
 
@@ -61,7 +62,7 @@ object HttpService {
       }
     }
 
-    assets ~ stop ~ new UserService(userRepository, internalTimeout).route ~ new SwaggerDocService(address, port, system).routes
+    assets ~ stop ~ corsHandler(new UserService(userRepository, internalTimeout).route) ~ corsHandler(new SwaggerDocService(address, port, system).routes)
   }
 }
 
@@ -95,6 +96,7 @@ class HttpService(address: String, port: Int, internalTimeout: Timeout, userRepo
   }
 }
 
+@Path("/users")  // @Path annotation required for Swagger
 @Api(value = "/users", produces = "application/json")
 class UserService(userRepository: ActorRef, internalTimeout: Timeout)(implicit executionContext: ExecutionContext) extends Directives {
   import CirceSupport._
@@ -104,18 +106,22 @@ class UserService(userRepository: ActorRef, internalTimeout: Timeout)(implicit e
 
   val route = pathPrefix("users") { usersGetAll ~ userPost }
 
-  @ApiOperation(httpMethod = "GET", response = classOf[UserRepository.User], value = "Returns a pet based on ID")
-  @ApiResponses(Array(
-    new ApiResponse(code = 400, message = "Invalid ID Supplied"),
-    new ApiResponse(code = 404, message = "Pet not found")
-  ))
+  @ApiOperation(value = "Get list of all users", nickname = "getAllUsers", httpMethod = "GET",
+    response = classOf[UserRepository.User], responseContainer = "Set")
   def usersGetAll = get {
     complete {
       (userRepository ? UserRepository.GetUsers).mapTo[Set[UserRepository.User]]
     }
   }
 
-  @ApiOperation(httpMethod = "POST", response = classOf[UserRepository.User], value = "Returns a pet based on ID")
+  @ApiOperation(value = "Create new user", nickname = "userPost", httpMethod = "POST", produces = "text/plain")
+  @ApiImplicitParams(Array(
+    new ApiImplicitParam(name = "user", dataType = "nl.codecentric.coffee.UserRepository$User", paramType = "body", required = true)
+  ))
+  @ApiResponses(Array(
+    new ApiResponse(code = 201, message = "User created"),
+    new ApiResponse(code = 409, message = "User already exists")
+  ))
   def userPost = post {
     entity(as[UserRepository.User]) { user =>
       onSuccess(userRepository ? UserRepository.AddUser(user.name)) {

@@ -36,7 +36,7 @@
       if (url && url.length > 1) {
         url = decodeURIComponent(url[1]);
       } else {
-        url = "http://petstore.swagger.io/v2/swagger.json";
+        url = "/api-docs/swagger.json";
       }
 
       hljs.configure({
@@ -72,11 +72,11 @@
         onFailure: function(data) {
           log("Unable to Load SwaggerUI");
         },
-        docExpansion: "none",
+        docExpansion: "list",
         jsonEditor: false,
         apisSorter: "alpha",
         defaultModelRendering: 'schema',
-        showRequestHeaders: false
+        showRequestHeaders: true
       });
 
       function addApiKeyAuthorization(){
@@ -108,6 +108,7 @@
 </head>
 
 <body class="swagger-section">
+<!-- Hide header because we don't need to specify the API URL
 <div id='header'>
   <div class="swagger-ui-wrap">
     <a id="logo" href="http://swagger.io">swagger</a>
@@ -118,6 +119,7 @@
     </form>
   </div>
 </div>
+-->
 
 <div id="message-bar" class="swagger-ui-wrap" data-sw-translate>&nbsp;</div>
 <div id="swagger-ui-container" class="swagger-ui-wrap"></div>
