@@ -51,7 +51,8 @@ object HttpService extends CorsSupport {
     import io.circe.generic.auto._
 
     // format: OFF
-    def assets = path("swagger") { getFromResource("swagger/index.html") } ~ getFromResourceDirectory("swagger")
+    def assets = pathPrefix("swagger") {
+      getFromResourceDirectory("swagger") ~ pathSingleSlash(get(redirect("index.html", StatusCodes.PermanentRedirect))) }
 
     def stop = pathSingleSlash {
       delete {

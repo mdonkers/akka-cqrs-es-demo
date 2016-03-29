@@ -16,7 +16,7 @@ Some code is copied from / based on the [Reactive-Flows example application]("ht
 - curl -i localhost:8080/users -H "Content-Type: application/json" -d '{"name": "Miel"}'    : Add new user
 - curl -i localhost:8080 -X DELETE    : Nicely shutdown the Akka application
 
-[Swagger UI](http://localhost:8080/swagger)
+[Swagger UI](http://localhost:8080/swagger/)
 
 ## Contribution policy ##
 
