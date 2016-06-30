@@ -1,16 +1,16 @@
 import sbt._
 
 object Version {
-  final val Akka = "2.4.2"
-  final val AkkaPersistenceCassandra = "0.10"
-  final val AkkaLog4j = "1.1.2"
-  final val AkkaHttpJson = "1.5.2"
-  final val Circe = "0.3.0"
-  final val Log4j = "2.5"
-  final val SwaggerAkka = "0.6.2"
+  final val Akka = "2.4.7"
+  final val AkkaPersistenceCassandra = "0.17"
+  final val AkkaLog4j = "1.1.4"
+  final val AkkaHttpJson = "1.7.0"
+  final val Circe = "0.4.1"
+  final val Log4j = "2.6"
+  final val SwaggerAkka = "0.7.1"
   final val Scala = "2.11.7"
   final val ScalaCheck = "1.13.0"
-  final val ScalaTest = "2.2.6"
+  final val ScalaTest = "3.0.0-RC2"
 }
 
 object Library {

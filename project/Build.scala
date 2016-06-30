@@ -1,5 +1,5 @@
 import com.typesafe.sbt.GitPlugin
-import com.typesafe.sbt.SbtScalariform
+import org.scalafmt.sbt.ScalaFmtPlugin
 import de.heikoseeberger.sbtheader.{ HeaderKey, HeaderPlugin }
 import de.heikoseeberger.sbtheader.license.Apache2_0
 import sbt._
@@ -9,11 +9,13 @@ import scalariform.formatter.preferences.{ AlignSingleLineCaseStatements, Double
 
 object Build extends AutoPlugin {
 
-  override def requires = JvmPlugin && HeaderPlugin && GitPlugin
+  override def requires = JvmPlugin && HeaderPlugin && GitPlugin && ScalaFmtPlugin
 
   override def trigger = allRequirements
 
-  override def projectSettings = Vector(
+  override def projectSettings =
+    ScalaFmtPlugin.autoImport.reformatOnCompileSettings ++
+    Vector(
     // Core settings
     organization := "nl.codecentric",
     licenses += ("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0")),
@@ -30,11 +32,8 @@ object Build extends AutoPlugin {
     unmanagedSourceDirectories.in(Compile) := Vector(scalaSource.in(Compile).value),
     unmanagedSourceDirectories.in(Test) := Vector(scalaSource.in(Test).value),
 
-    // Scalariform settings
-    SbtScalariform.autoImport.scalariformPreferences := SbtScalariform.autoImport.scalariformPreferences.value
-      .setPreference(AlignSingleLineCaseStatements, true)
-      .setPreference(AlignSingleLineCaseStatements.MaxArrowIndent, 100)
-      .setPreference(DoubleIndentClassDeclaration, true),
+    // ScalaFmt settings
+    ScalaFmtPlugin.autoImport.scalafmtConfig := Some(baseDirectory.in(ThisBuild).value / ".scalafmt"),
 
     // Git settings
     GitPlugin.autoImport.git.useGitDescribe := true,

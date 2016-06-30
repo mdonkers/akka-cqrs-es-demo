@@ -15,8 +15,8 @@ libraryDependencies ++= Vector(
   Library.slf4jLog4jBridge,
   Library.akkaHttpCirce,
   Library.swaggerAkka,
-  Library.scalaCheck % "test",
-  Library.scalaTest % "test",
+  Library.scalaCheck           % "test",
+  Library.scalaTest            % "test",
   Library.akkaTestkit          % "test",
   Library.akkaHttpTestkit      % "test"
 )
