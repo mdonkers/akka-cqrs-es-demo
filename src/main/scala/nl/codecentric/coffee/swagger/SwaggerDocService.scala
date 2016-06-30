@@ -27,7 +27,9 @@ import com.github.swagger.akka._
 /**
  * @author Miel Donkers (miel.donkers@codecentric.nl)
  */
-class SwaggerDocService(address: String, port: Int, system: ActorSystem) extends SwaggerHttpService with HasActorSystem {
+class SwaggerDocService(address: String, port: Int, system: ActorSystem)
+    extends SwaggerHttpService
+    with HasActorSystem {
   override implicit val actorSystem: ActorSystem = system
   override implicit val materializer: ActorMaterializer = ActorMaterializer()
   override val apiTypes = Seq(ru.typeOf[UserService])

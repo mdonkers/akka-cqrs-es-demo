@@ -32,8 +32,8 @@ import scala.concurrent.ExecutionContext
 import io.swagger.annotations._
 
 /**
-  * @author Miel Donkers (miel.donkers@codecentric.nl)
-  */
+ * @author Miel Donkers (miel.donkers@codecentric.nl)
+ */
 object HttpService extends CorsSupport {
 
   private[coffee] case object Stop
@@ -42,19 +42,16 @@ object HttpService extends CorsSupport {
   final val Name = "http-service"
   // $COVERAGE-ON$
 
-  def props(address: String,
-            port: Int,
-            internalTimeout: Timeout,
-            userRepository: ActorRef): Props =
+  def props(address: String, port: Int, internalTimeout: Timeout, userRepository: ActorRef): Props =
     Props(new HttpService(address, port, internalTimeout, userRepository))
 
   private[coffee] def route(
-      httpService: ActorRef,
-      address: String,
-      port: Int,
-      internalTimeout: Timeout,
-      userRepository: ActorRef,
-      system: ActorSystem
+    httpService: ActorRef,
+    address: String,
+    port: Int,
+    internalTimeout: Timeout,
+    userRepository: ActorRef,
+    system: ActorSystem
   )(implicit ec: ExecutionContext, mat: Materializer) = {
     import Directives._
     import io.circe.generic.auto._

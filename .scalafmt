@@ -1,3 +1,4 @@
 --style defaultWithAlign
+--maxColumn 120
 --spacesInImportCurlyBraces true
 --danglingParentheses true

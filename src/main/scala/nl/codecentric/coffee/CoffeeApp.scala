@@ -52,10 +52,7 @@ class Master extends Actor with ActorLogging with ActorSettings {
 
   protected def createHttpService(userRepositoryActor: ActorRef): ActorRef = {
     import settings.httpService._
-    context.actorOf(
-      HttpService.props(address, port, selfTimeout, userRepositoryActor),
-      HttpService.Name
-    )
+    context.actorOf(HttpService.props(address, port, selfTimeout, userRepositoryActor), HttpService.Name)
   }
 
   protected def onTerminated(actor: ActorRef): Unit = {
