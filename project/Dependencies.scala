@@ -16,6 +16,7 @@ object Version {
 object Library {
   val akkaHttp = "com.typesafe.akka" %% "akka-http-experimental" % Version.Akka
   val akkaPersistence = "com.typesafe.akka" %% "akka-persistence" % Version.Akka
+  val akkaPersistenceQuery = "com.typesafe.akka" %% "akka-persistence-query-experimental" % Version.Akka
   val akkaHttpCirce = "de.heikoseeberger" %% "akka-http-circe" % Version.AkkaHttpJson
   val circeGeneric = "io.circe" %% "circe-generic" % Version.Circe
   val circeJava8 = "io.circe" %% "circe-java8" % Version.Circe

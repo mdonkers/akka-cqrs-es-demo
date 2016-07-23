@@ -37,8 +37,8 @@ object CoffeeApp {
 class Master extends Actor with ActorLogging with ActorSettings {
   override val supervisorStrategy = SupervisorStrategy.stoppingStrategy
 
-  private val userRepository = context.watch(createUserRepository())
-  context.watch(createHttpService(userRepository))
+  private val userAggregate = context.watch(createUserAggregate())
+  context.watch(createHttpService(userAggregate))
 
   log.info("Up and running")
 
@@ -46,8 +46,8 @@ class Master extends Actor with ActorLogging with ActorSettings {
     case Terminated(actor) => onTerminated(actor)
   }
 
-  protected def createUserRepository(): ActorRef = {
-    context.actorOf(UserRepository.props(), UserRepository.Name)
+  protected def createUserAggregate(): ActorRef = {
+    context.actorOf(UserAggregate.props(), UserAggregate.Name)
   }
 
   protected def createHttpService(userRepositoryActor: ActorRef): ActorRef = {

@@ -16,20 +16,14 @@
 
 package nl.codecentric.coffee
 
-import akka.actor.{ Props, ActorLogging }
+import akka.actor.{ ActorLogging, Props }
 import akka.persistence.PersistentActor
+import nl.codecentric.coffee.domain._
 
+/**
+ * @author Miel Donkers (miel.donkers@codecentric.nl)
+ */
 object UserRepository {
-
-  case class User(name: String)
-
-  case object GetUsers
-
-  case class AddUser(name: String)
-
-  case class UserAdded(user: User)
-
-  case class UserExists(name: String)
 
   final val Name = "user-repository"
 
@@ -37,12 +31,7 @@ object UserRepository {
 
 }
 
-/**
- * @author Miel Donkers (miel.donkers@codecentric.nl)
- */
 class UserRepository extends PersistentActor with ActorLogging {
-
-  import UserRepository._
 
   override val persistenceId: String = "user-repository"
   private var users = Set.empty[User]
@@ -53,9 +42,8 @@ class UserRepository extends PersistentActor with ActorLogging {
       sender() ! users
     case AddUser(name) if users.exists(_.name == name) =>
       sender() ! UserExists(name)
-    case AddUser(name) =>
-      log.info(s"Adding new user with name; $name")
-      val user = User(name)
+    case AddUser(user) =>
+      log.info(s"Adding new user with name; ${user.name}")
       persist(user) { persistedUser =>
         receiveRecover(persistedUser)
         sender() ! UserAdded(persistedUser)
@@ -65,5 +53,4 @@ class UserRepository extends PersistentActor with ActorLogging {
   override def receiveRecover: Receive = {
     case user: User => users += user
   }
-
 }

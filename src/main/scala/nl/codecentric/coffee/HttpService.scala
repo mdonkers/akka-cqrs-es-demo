@@ -22,14 +22,16 @@ import akka.actor._
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Directives
-import akka.stream.{ Materializer, ActorMaterializer }
+import akka.stream.{ ActorMaterializer, Materializer }
 import akka.pattern.{ ask, pipe }
 import akka.util.Timeout
 import de.heikoseeberger.akkahttpcirce.CirceSupport
 import nl.codecentric.coffee.swagger.SwaggerDocService
 import nl.codecentric.coffee.util.CorsSupport
+
 import scala.concurrent.ExecutionContext
 import io.swagger.annotations._
+import nl.codecentric.coffee.domain._
 
 /**
  * @author Miel Donkers (miel.donkers@codecentric.nl)
@@ -42,15 +44,15 @@ object HttpService extends CorsSupport {
   final val Name = "http-service"
   // $COVERAGE-ON$
 
-  def props(address: String, port: Int, internalTimeout: Timeout, userRepository: ActorRef): Props =
-    Props(new HttpService(address, port, internalTimeout, userRepository))
+  def props(address: String, port: Int, internalTimeout: Timeout, userAggregate: ActorRef): Props =
+    Props(new HttpService(address, port, internalTimeout, userAggregate))
 
   private[coffee] def route(
     httpService: ActorRef,
     address: String,
     port: Int,
     internalTimeout: Timeout,
-    userRepository: ActorRef,
+    userAggregate: ActorRef,
     system: ActorSystem
   )(implicit ec: ExecutionContext, mat: Materializer) = {
     import Directives._
@@ -69,11 +71,11 @@ object HttpService extends CorsSupport {
       }
     }
 
-    assets ~ stop ~ corsHandler(new UserService(userRepository, internalTimeout).route) ~ corsHandler(new SwaggerDocService(address, port, system).routes)
+    assets ~ stop ~ corsHandler(new UserService(userAggregate, internalTimeout).route) ~ corsHandler(new SwaggerDocService(address, port, system).routes)
   }
 }
 
-class HttpService(address: String, port: Int, internalTimeout: Timeout, userRepository: ActorRef)
+class HttpService(address: String, port: Int, internalTimeout: Timeout, userAggregate: ActorRef)
     extends Actor with ActorLogging {
   import HttpService._
   import context.dispatcher
@@ -81,7 +83,7 @@ class HttpService(address: String, port: Int, internalTimeout: Timeout, userRepo
   private implicit val mat = ActorMaterializer()
 
   Http(context.system)
-    .bindAndHandle(route(self, address, port, internalTimeout, userRepository, context.system), address, port)
+    .bindAndHandle(route(self, address, port, internalTimeout, userAggregate, context.system), address, port)
     .pipeTo(self)
 
   override def receive = binding
@@ -105,7 +107,7 @@ class HttpService(address: String, port: Int, internalTimeout: Timeout, userRepo
 
 @Path("/users")  // @Path annotation required for Swagger
 @Api(value = "/users", produces = "application/json")
-class UserService(userRepository: ActorRef, internalTimeout: Timeout)(implicit executionContext: ExecutionContext) extends Directives {
+class UserService(userAggregate: ActorRef, internalTimeout: Timeout)(implicit executionContext: ExecutionContext) extends Directives {
   import CirceSupport._
   import io.circe.generic.auto._
 
@@ -114,10 +116,10 @@ class UserService(userRepository: ActorRef, internalTimeout: Timeout)(implicit e
   val route = pathPrefix("users") { usersGetAll ~ userPost }
 
   @ApiOperation(value = "Get list of all users", nickname = "getAllUsers", httpMethod = "GET",
-    response = classOf[UserRepository.User], responseContainer = "Set")
+    response = classOf[User], responseContainer = "Set")
   def usersGetAll = get {
     complete {
-      (userRepository ? UserRepository.GetUsers).mapTo[Set[UserRepository.User]]
+      (userAggregate ? GetUsers).mapTo[Set[User]]
     }
   }
 
@@ -130,10 +132,10 @@ class UserService(userRepository: ActorRef, internalTimeout: Timeout)(implicit e
     new ApiResponse(code = 409, message = "User already exists")
   ))
   def userPost = post {
-    entity(as[UserRepository.User]) { user =>
-      onSuccess(userRepository ? UserRepository.AddUser(user.name)) {
-        case UserRepository.UserAdded(_)  => complete(StatusCodes.Created)
-        case UserRepository.UserExists(_) => complete(StatusCodes.Conflict)
+    entity(as[User]) { user =>
+      onSuccess(userAggregate ? AddUser(user)) {
+        case UserAdded(_)  => complete(StatusCodes.Created)
+        case UserExists(_) => complete(StatusCodes.Conflict)
       }
     }
   }

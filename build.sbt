@@ -9,6 +9,7 @@ libraryDependencies ++= Vector(
   Library.akkaHttp,
   Library.akkaLog4j,
   Library.akkaPersistenceCassandra,
+  Library.akkaPersistenceQuery,
   Library.circeGeneric,
   Library.circeJava8,
   Library.log4jCore,
