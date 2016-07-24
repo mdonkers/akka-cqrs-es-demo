@@ -30,13 +30,13 @@ object EventReceiver {
   def props(): Props = Props(new EventReceiver())
 }
 
-class EventReceiver extends Consumer with ActorLogging {
+class EventReceiver extends Consumer with ActorSettings with ActorLogging {
 
   import io.circe._
   import io.circe.generic.auto._
   import io.circe.parser._
 
-  override def endpointUri: String = "rabbitmq://192.168.99.100:5672/userevents?username=guest&password=guest"
+  override def endpointUri: String = settings.rabbitMQ.uri
 
   override def receive: Receive = {
     case msg: CamelMessage =>

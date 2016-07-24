@@ -49,7 +49,6 @@ class EventSender extends Actor with ActorLogging {
   }
 }
 
-class CamelSender extends Actor with Producer {
-  // TODO put URI nicely in configuration
-  override def endpointUri: String = "rabbitmq://192.168.99.100:5672/userevents?username=guest&password=guest"
+class CamelSender extends Actor with Producer with ActorSettings {
+  override def endpointUri: String = settings.rabbitMQ.uri
 }

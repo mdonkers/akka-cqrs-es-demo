@@ -33,6 +33,10 @@ class Settings(system: ExtendedActorSystem) extends Extension {
     val selfTimeout: FiniteDuration = getDuration("http-service.self-timeout")
   }
 
+  object rabbitMQ {
+    val uri: String = coffeeApp.getString("rabbitmq.uri")
+  }
+
   private val coffeeApp = system.settings.config.getConfig("coffee-app")
 
   private def getDuration(key: String) = FiniteDuration(coffeeApp.getDuration(key, MILLISECONDS), MILLISECONDS)
