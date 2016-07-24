@@ -15,5 +15,5 @@ docker run --name akka-cassandra -v /app/cassandra:/var/lib/cassandra -p 7000:70
 
 ## RabbitMQ (with management interface; guest/guest)
 del_stopped akka-rabbit
-docker run --name akka-rabbit --hostname akka-rabbit -p 8080:15672 -p 15671:15671 -d rabbitmq:3-management
+docker run --name akka-rabbit --hostname akka-rabbit -p 5671:5671 -p 5672:5672 -p 8080:15672 -p 15671:15671 -d rabbitmq:3-management
 

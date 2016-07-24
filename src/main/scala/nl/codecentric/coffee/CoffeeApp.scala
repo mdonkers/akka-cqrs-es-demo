@@ -39,6 +39,7 @@ class Master extends Actor with ActorLogging with ActorSettings {
 
   private val userAggregate = context.watch(createUserAggregate())
   context.watch(createHttpService(userAggregate))
+  context.watch(createEventReceiver())
 
   log.info("Up and running")
 
@@ -48,6 +49,10 @@ class Master extends Actor with ActorLogging with ActorSettings {
 
   protected def createUserAggregate(): ActorRef = {
     context.actorOf(UserAggregate.props(), UserAggregate.Name)
+  }
+
+  protected def createEventReceiver(): ActorRef = {
+    context.actorOf(EventReceiver.props(), EventReceiver.Name)
   }
 
   protected def createHttpService(userRepositoryActor: ActorRef): ActorRef = {

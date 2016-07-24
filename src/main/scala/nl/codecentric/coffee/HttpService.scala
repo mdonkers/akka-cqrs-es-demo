@@ -125,7 +125,7 @@ class UserService(userAggregate: ActorRef, internalTimeout: Timeout)(implicit ex
 
   @ApiOperation(value = "Create new user", nickname = "userPost", httpMethod = "POST", produces = "text/plain")
   @ApiImplicitParams(Array(
-    new ApiImplicitParam(name = "user", dataType = "nl.codecentric.coffee.UserRepository$User", paramType = "body", required = true)
+    new ApiImplicitParam(name = "user", dataType = "nl.codecentric.coffee.domain.User", paramType = "body", required = true)
   ))
   @ApiResponses(Array(
     new ApiResponse(code = 201, message = "User created"),
