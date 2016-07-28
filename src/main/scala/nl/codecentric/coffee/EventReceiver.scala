@@ -16,10 +16,12 @@
 
 package nl.codecentric.coffee
 
+import akka.actor.Status.Failure
 import akka.actor.{ ActorLogging, Props }
-import akka.camel.{ CamelMessage, Consumer }
+import akka.camel.{ Ack, CamelMessage, Consumer }
 import cats.data.Xor
 import nl.codecentric.coffee.domain.User
+import org.apache.camel.component.rabbitmq.RabbitMQConstants
 
 /**
  * @author Miel Donkers (miel.donkers@codecentric.nl)
@@ -38,13 +40,21 @@ class EventReceiver extends Consumer with ActorSettings with ActorLogging {
 
   override def endpointUri: String = settings.rabbitMQ.uri
 
+  override def autoAck = false
+
   override def receive: Receive = {
     case msg: CamelMessage =>
       val body: Xor[Error, User] = decode[User](msg.bodyAs[String])
       body.fold({ error =>
         log.error("Could not parse message: {}", msg)
+        sender() ! Failure(error)
       }, { user =>
-        log.info("Event Received: {}", user.name)
+        log.info(
+          "Event Received with id {} and for user: {}",
+          msg.headers.getOrElse(RabbitMQConstants.MESSAGE_ID, ""),
+          user.name
+        )
+        sender() ! Ack
       })
     case _ => log.warning("Unexpected event received")
   }
