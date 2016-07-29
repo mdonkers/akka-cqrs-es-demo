@@ -19,4 +19,4 @@ package nl.codecentric.coffee.domain
 /**
  * @author Miel Donkers (miel.donkers@codecentric.nl)
  */
-case class User(name: String)
+final case class User(name: String)

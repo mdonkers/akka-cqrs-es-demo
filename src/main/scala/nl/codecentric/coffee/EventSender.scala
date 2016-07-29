@@ -32,9 +32,9 @@ object EventSender {
 
   def props(): Props = Props(new EventSender())
 
-  case class Msg(deliveryId: Long, user: User)
+  final case class Msg(deliveryId: Long, user: User)
 
-  case class Confirm(deliveryId: Long)
+  final case class Confirm(deliveryId: Long)
 }
 
 class EventSender extends Actor with ActorLogging {

@@ -33,9 +33,9 @@ object UserAggregate {
 
   sealed trait Evt
 
-  case class MsgSent(s: User) extends Evt
+  final case class MsgSent(s: User) extends Evt
 
-  case class MsgConfirmed(deliveryId: Long) extends Evt
+  final case class MsgConfirmed(deliveryId: Long) extends Evt
 
 }
 

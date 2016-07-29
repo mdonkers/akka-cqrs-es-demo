@@ -21,8 +21,8 @@ package nl.codecentric.coffee.domain
  */
 // Request objects
 case object GetUsers
-case class AddUser(user: User)
+final case class AddUser(user: User)
 
 // Response objects
-case class UserAdded(user: User)
-case class UserExists(user: User)
+final case class UserAdded(user: User)
+final case class UserExists(user: User)
