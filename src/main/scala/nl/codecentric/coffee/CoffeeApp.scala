@@ -17,6 +17,8 @@
 package nl.codecentric.coffee
 
 import akka.actor._
+import nl.codecentric.coffee.readside.EventReceiver
+import nl.codecentric.coffee.writeside.UserAggregate
 
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration

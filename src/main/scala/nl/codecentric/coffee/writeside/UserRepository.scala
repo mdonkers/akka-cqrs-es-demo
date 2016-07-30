@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package nl.codecentric.coffee
+package nl.codecentric.coffee.writeside
 
 import akka.actor.{ ActorLogging, Props }
 import akka.persistence.PersistentActor

@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-package nl.codecentric.coffee
+package nl.codecentric.coffee.writeside
 
 import akka.actor.{ Actor, ActorLogging, ActorPath, Props, Status }
 import akka.camel.{ CamelMessage, Producer }
+import nl.codecentric.coffee.ActorSettings
 import nl.codecentric.coffee.domain.User
 import org.apache.camel.component.rabbitmq.RabbitMQConstants
 
@@ -38,9 +39,9 @@ object EventSender {
 }
 
 class EventSender extends Actor with ActorLogging {
+  import EventSender._
   import io.circe.generic.auto._
   import io.circe.syntax._
-  import EventSender._
 
   private val camelSender = context.watch(context.actorOf(Props[CamelSender]))
 

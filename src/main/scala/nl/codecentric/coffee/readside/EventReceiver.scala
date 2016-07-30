@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-package nl.codecentric.coffee
+package nl.codecentric.coffee.readside
 
 import akka.actor.Status.Failure
 import akka.actor.{ ActorLogging, Props }
 import akka.camel.{ Ack, CamelMessage, Consumer }
 import cats.data.Xor
+import nl.codecentric.coffee.ActorSettings
 import nl.codecentric.coffee.domain.User
 import org.apache.camel.component.rabbitmq.RabbitMQConstants
 

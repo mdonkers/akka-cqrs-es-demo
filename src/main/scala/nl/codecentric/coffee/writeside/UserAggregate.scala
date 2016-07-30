@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package nl.codecentric.coffee
+package nl.codecentric.coffee.writeside
 
 import akka.actor.{ ActorLogging, ActorRef, Props, SupervisorStrategy }
 import akka.persistence.{ AtLeastOnceDelivery, PersistentActor }
-import nl.codecentric.coffee.EventSender.{ Confirm, Msg }
-import nl.codecentric.coffee.UserAggregate.{ Evt, MsgConfirmed, MsgSent }
 import nl.codecentric.coffee.domain._
+import nl.codecentric.coffee.writeside.EventSender.{ Confirm, Msg }
+import nl.codecentric.coffee.writeside.UserAggregate.{ Evt, MsgConfirmed, MsgSent }
 
 /**
  * @author Miel Donkers (miel.donkers@codecentric.nl)
