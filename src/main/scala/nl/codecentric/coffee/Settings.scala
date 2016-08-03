@@ -37,6 +37,12 @@ class Settings(system: ExtendedActorSystem) extends Extension {
     val uri: String = coffeeApp.getString("rabbitmq.uri")
   }
 
+  object mariaDB {
+    val uri: String = coffeeApp.getString("mariadb.uri")
+    val user: String = coffeeApp.getString("mariadb.user")
+    val password: String = coffeeApp.getString("mariadb.password")
+  }
+
   private val coffeeApp = system.settings.config.getConfig("coffee-app")
 
   private def getDuration(key: String) = FiniteDuration(coffeeApp.getDuration(key, MILLISECONDS), MILLISECONDS)

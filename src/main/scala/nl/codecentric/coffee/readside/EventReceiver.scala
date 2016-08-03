@@ -30,14 +30,15 @@ import org.apache.camel.component.rabbitmq.RabbitMQConstants
 object EventReceiver {
   final val Name = "event-receiver"
 
-  def props(): Props = Props(new EventReceiver())
+  def props(userRepository: UserRepository): Props = Props(new EventReceiver(userRepository))
 }
 
-class EventReceiver extends Consumer with ActorSettings with ActorLogging {
+class EventReceiver(userRepository: UserRepository) extends Consumer with ActorSettings with ActorLogging {
 
   import io.circe._
   import io.circe.generic.auto._
   import io.circe.parser._
+  import context.dispatcher
 
   override def endpointUri: String = settings.rabbitMQ.uri
 
@@ -45,17 +46,22 @@ class EventReceiver extends Consumer with ActorSettings with ActorLogging {
 
   override def receive: Receive = {
     case msg: CamelMessage =>
+      val origSender = sender
       val body: Xor[Error, User] = decode[User](msg.bodyAs[String])
+
       body.fold({ error =>
         log.error("Could not parse message: {}", msg)
-        sender() ! Failure(error)
+        origSender ! Failure(error)
       }, { user =>
         log.info(
           "Event Received with id {} and for user: {}",
           msg.headers.getOrElse(RabbitMQConstants.MESSAGE_ID, ""),
           user.name
         )
-        sender() ! Ack
+        userRepository.createUser(UserEntity(name = user.name)).onComplete {
+          case scala.util.Success(_) => origSender ! Ack // Send ACK when storing User succeeded
+          case scala.util.Failure(t) => log.error(t, "Failed to persist user with name: {}", user.name)
+        }
       })
     case _ => log.warning("Unexpected event received")
   }

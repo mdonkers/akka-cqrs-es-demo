@@ -17,7 +17,8 @@
 package nl.codecentric.coffee
 
 import akka.actor._
-import nl.codecentric.coffee.readside.EventReceiver
+import nl.codecentric.coffee.readside.{ EventReceiver, UserRepository }
+import nl.codecentric.coffee.util.DatabaseService
 import nl.codecentric.coffee.writeside.UserAggregate
 
 import scala.concurrent.Await
@@ -41,7 +42,8 @@ class Master extends Actor with ActorLogging with ActorSettings {
 
   private val userAggregate = context.watch(createUserAggregate())
   context.watch(createHttpService(userAggregate))
-  context.watch(createEventReceiver())
+  private val databaseService = createDatabaseService()
+  context.watch(createEventReceiver(createUserRepository(databaseService)))
 
   log.info("Up and running")
 
@@ -53,8 +55,20 @@ class Master extends Actor with ActorLogging with ActorSettings {
     context.actorOf(UserAggregate.props(), UserAggregate.Name)
   }
 
-  protected def createEventReceiver(): ActorRef = {
-    context.actorOf(EventReceiver.props(), EventReceiver.Name)
+  protected def createDatabaseService(): DatabaseService = {
+    import settings.mariaDB._
+    new DatabaseService(uri, user, password)
+  }
+
+  protected def createUserRepository(databaseService: DatabaseService): UserRepository = {
+    import context.dispatcher
+    val repository = new UserRepository(databaseService)
+    repository.createTable()
+    return repository
+  }
+
+  protected def createEventReceiver(userRepository: UserRepository): ActorRef = {
+    context.actorOf(EventReceiver.props(userRepository), EventReceiver.Name)
   }
 
   protected def createHttpService(userRepositoryActor: ActorRef): ActorRef = {
@@ -65,5 +79,7 @@ class Master extends Actor with ActorLogging with ActorSettings {
   protected def onTerminated(actor: ActorRef): Unit = {
     log.error("Terminating the system because {} terminated!", actor)
     context.system.terminate()
+    databaseService.dbSession.close()
+    databaseService.db.close()
   }
 }
