@@ -147,8 +147,8 @@ class UserService(userAggregate: ActorRef, userRepository: UserRepository, inter
   def userPost = post {
     entity(as[User]) { user =>
       onSuccess(userAggregate ? AddUser(user)) {
-        case UserAdded(_)  => complete(StatusCodes.Created)
-        case UserExists(_) => complete(StatusCodes.Conflict)
+        case UserAdded(_)  => complete(HttpResponse(StatusCodes.Created, entity = "User added"))
+        case UserExists(_) => complete(HttpResponse(StatusCodes.Conflict, entity = "User already exists"))
       }
     }
   }

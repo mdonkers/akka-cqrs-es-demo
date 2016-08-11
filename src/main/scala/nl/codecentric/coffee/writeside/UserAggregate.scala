@@ -21,6 +21,7 @@ import akka.persistence.{ AtLeastOnceDelivery, PersistentActor }
 import nl.codecentric.coffee.domain._
 import nl.codecentric.coffee.writeside.EventSender.{ Confirm, Msg }
 import nl.codecentric.coffee.writeside.UserAggregate.{ Evt, MsgConfirmed, MsgSent }
+import nl.codecentric.coffee.writeside.UserRepository.GetUsers
 
 /**
  * @author Miel Donkers (miel.donkers@codecentric.nl)
@@ -63,13 +64,19 @@ class UserAggregate extends PersistentActor with AtLeastOnceDelivery with ActorL
   }
 
   override def receiveCommand: Receive = {
-    // TODO also track state of persisting the User inside the repository
-    // Make sure the repository can handle duplicate messages (keep track of message id's)
     case addUserCmd: AddUser =>
-      persist(MsgSent(addUserCmd.user)) { persistedMsg =>
-        updateState(persistedMsg)
-        val addUserAnswer = userRepository ? addUserCmd
-        pipe(addUserAnswer) to sender()
+      val origSender = sender
+      val usersFuture = userRepository ? GetUsers
+
+      usersFuture.onSuccess {
+        case users: Set[User] if users.exists(_.name == addUserCmd.user.name) =>
+          origSender ! UserExists(addUserCmd.user)
+        case users: Set[User] =>
+          persist(MsgSent(addUserCmd.user)) { persistedMsg =>
+            updateState(persistedMsg)
+            val addUserAnswer = userRepository ? addUserCmd
+            pipe(addUserAnswer) to origSender
+          }
       }
 
     case Confirm(deliveryId) =>

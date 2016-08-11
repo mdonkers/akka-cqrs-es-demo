@@ -19,6 +19,7 @@ package nl.codecentric.coffee.writeside
 import akka.actor.{ ActorLogging, Props }
 import akka.persistence.PersistentActor
 import nl.codecentric.coffee.domain._
+import nl.codecentric.coffee.writeside.UserRepository.GetUsers
 
 /**
  * @author Miel Donkers (miel.donkers@codecentric.nl)
@@ -29,6 +30,7 @@ object UserRepository {
 
   def props(): Props = Props(new UserRepository())
 
+  case object GetUsers
 }
 
 class UserRepository extends PersistentActor with ActorLogging {
@@ -37,8 +39,8 @@ class UserRepository extends PersistentActor with ActorLogging {
   private var users = Set.empty[User]
 
   override def receiveCommand: Receive = {
-    case AddUser(name) if users.exists(_.name == name) =>
-      sender() ! UserExists(name)
+    case GetUsers =>
+      sender() ! users
     case AddUser(user) =>
       log.info(s"Adding new user with name; ${user.name}")
       persist(user) { persistedUser =>
