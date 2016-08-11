@@ -63,9 +63,6 @@ class UserAggregate extends PersistentActor with AtLeastOnceDelivery with ActorL
   }
 
   override def receiveCommand: Receive = {
-    case GetUsers => // This case will later be moved to the 'write' side
-      userRepository forward GetUsers // Forward to keep original sender
-
     // TODO also track state of persisting the User inside the repository
     // Make sure the repository can handle duplicate messages (keep track of message id's)
     case addUserCmd: AddUser =>

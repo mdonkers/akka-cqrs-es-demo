@@ -20,7 +20,7 @@ import javax.ws.rs.Path
 
 import akka.actor._
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.model.{ HttpResponse, StatusCodes }
 import akka.http.scaladsl.server.Directives
 import akka.stream.{ ActorMaterializer, Materializer }
 import akka.pattern.{ ask, pipe }
@@ -32,6 +32,9 @@ import nl.codecentric.coffee.util.CorsSupport
 import scala.concurrent.ExecutionContext
 import io.swagger.annotations._
 import nl.codecentric.coffee.domain._
+import nl.codecentric.coffee.readside.UserRepository
+
+import scala.util.{ Failure, Success }
 
 /**
  * @author Miel Donkers (miel.donkers@codecentric.nl)
@@ -44,16 +47,19 @@ object HttpService extends CorsSupport {
   final val Name = "http-service"
   // $COVERAGE-ON$
 
-  def props(address: String, port: Int, internalTimeout: Timeout, userAggregate: ActorRef): Props =
-    Props(new HttpService(address, port, internalTimeout, userAggregate))
-
-  private[coffee] def route(
-    httpService: ActorRef,
+  def props(
     address: String,
     port: Int,
     internalTimeout: Timeout,
     userAggregate: ActorRef,
-    system: ActorSystem
+    userRepository: UserRepository
+  ): Props =
+    Props(new HttpService(address, port, internalTimeout, userAggregate, userRepository))
+
+  private[coffee] def route(
+    httpService: ActorRef,
+    userService: UserService,
+    swaggerDocService: SwaggerDocService
   )(implicit ec: ExecutionContext, mat: Materializer) = {
     import Directives._
     import io.circe.generic.auto._
@@ -71,11 +77,11 @@ object HttpService extends CorsSupport {
       }
     }
 
-    assets ~ stop ~ corsHandler(new UserService(userAggregate, internalTimeout).route) ~ corsHandler(new SwaggerDocService(address, port, system).routes)
+    assets ~ stop ~ corsHandler(userService.route) ~ corsHandler(swaggerDocService.routes)
   }
 }
 
-class HttpService(address: String, port: Int, internalTimeout: Timeout, userAggregate: ActorRef)
+class HttpService(address: String, port: Int, internalTimeout: Timeout, userAggregate: ActorRef, userRepository: UserRepository)
     extends Actor with ActorLogging {
   import HttpService._
   import context.dispatcher
@@ -83,7 +89,10 @@ class HttpService(address: String, port: Int, internalTimeout: Timeout, userAggr
   private implicit val mat = ActorMaterializer()
 
   Http(context.system)
-    .bindAndHandle(route(self, address, port, internalTimeout, userAggregate, context.system), address, port)
+    .bindAndHandle(
+      route(self, new UserService(userAggregate, userRepository, internalTimeout), new SwaggerDocService(address, port, context.system)),
+      address,
+      port)
     .pipeTo(self)
 
   override def receive = binding
@@ -107,7 +116,7 @@ class HttpService(address: String, port: Int, internalTimeout: Timeout, userAggr
 
 @Path("/users")  // @Path annotation required for Swagger
 @Api(value = "/users", produces = "application/json")
-class UserService(userAggregate: ActorRef, internalTimeout: Timeout)(implicit executionContext: ExecutionContext) extends Directives {
+class UserService(userAggregate: ActorRef, userRepository: UserRepository, internalTimeout: Timeout)(implicit executionContext: ExecutionContext) extends Directives {
   import CirceSupport._
   import io.circe.generic.auto._
 
@@ -117,9 +126,13 @@ class UserService(userAggregate: ActorRef, internalTimeout: Timeout)(implicit ex
 
   @ApiOperation(value = "Get list of all users", nickname = "getAllUsers", httpMethod = "GET",
     response = classOf[User], responseContainer = "Set")
+  @ApiResponses(Array(
+    new ApiResponse(code = 500, message = "Internal error")
+  ))
   def usersGetAll = get {
-    complete {
-      (userAggregate ? GetUsers).mapTo[Set[User]]
+    onComplete(userRepository.getUsers()) {
+      case Success(users) => complete(users.map(u => User(u.name)))
+      case Failure(_) => complete(HttpResponse(StatusCodes.InternalServerError, entity = "Internal error"))
     }
   }
 

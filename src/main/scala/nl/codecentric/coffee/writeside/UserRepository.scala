@@ -37,9 +37,6 @@ class UserRepository extends PersistentActor with ActorLogging {
   private var users = Set.empty[User]
 
   override def receiveCommand: Receive = {
-    case GetUsers =>
-      log.debug("received GetUsers command")
-      sender() ! users
     case AddUser(name) if users.exists(_.name == name) =>
       sender() ! UserExists(name)
     case AddUser(user) =>
