@@ -132,7 +132,7 @@ class UserService(userAggregate: ActorRef, userRepository: UserRepository, inter
   def usersGetAll = get {
     onComplete(userRepository.getUsers()) {
       case Success(users) => complete(users.map(u => User(u.name)))
-      case Failure(_) => complete(HttpResponse(StatusCodes.InternalServerError, entity = "Internal error"))
+      case Failure(t) => complete(HttpResponse(StatusCodes.InternalServerError, entity = "Internal error: " + t))
     }
   }
 
@@ -146,9 +146,9 @@ class UserService(userAggregate: ActorRef, userRepository: UserRepository, inter
   ))
   def userPost = post {
     entity(as[User]) { user =>
-      onSuccess(userAggregate ? AddUser(user)) {
-        case UserAdded(_)  => complete(HttpResponse(StatusCodes.Created, entity = "User added"))
-        case UserExists(_) => complete(HttpResponse(StatusCodes.Conflict, entity = "User already exists"))
+      onSuccess(userAggregate ? AddUserCmd(user)) {
+        case UserAddedResp(_)  => complete(HttpResponse(StatusCodes.Created, entity = "User added"))
+        case UserExistsResp(_) => complete(HttpResponse(StatusCodes.Conflict, entity = "User already exists"))
       }
     }
   }

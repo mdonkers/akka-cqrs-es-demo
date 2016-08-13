@@ -20,8 +20,8 @@ import akka.actor.{ ActorLogging, ActorRef, Props, SupervisorStrategy }
 import akka.persistence.{ AtLeastOnceDelivery, PersistentActor }
 import nl.codecentric.coffee.domain._
 import nl.codecentric.coffee.writeside.EventSender.{ Confirm, Msg }
-import nl.codecentric.coffee.writeside.UserAggregate.{ Evt, MsgConfirmed, MsgSent }
-import nl.codecentric.coffee.writeside.UserRepository.GetUsers
+import nl.codecentric.coffee.writeside.UserAggregate.{ Evt, GetUsersForwardResponse, MsgAddUser, MsgConfirmed }
+import nl.codecentric.coffee.writeside.UserRepository.{ AddUser, ConfirmAddUser, GetUsers }
 
 /**
  * @author Miel Donkers (miel.donkers@codecentric.nl)
@@ -34,10 +34,11 @@ object UserAggregate {
 
   sealed trait Evt
 
-  final case class MsgSent(s: User) extends Evt
+  final case class MsgAddUser(u: User) extends Evt
 
   final case class MsgConfirmed(deliveryId: Long) extends Evt
 
+  final case class GetUsersForwardResponse(senderActor: ActorRef, existingUsers: Set[User], newUser: User)
 }
 
 class UserAggregate extends PersistentActor with AtLeastOnceDelivery with ActorLogging {
@@ -50,7 +51,7 @@ class UserAggregate extends PersistentActor with AtLeastOnceDelivery with ActorL
 
   override val persistenceId: String = "user-aggregate"
   override val supervisorStrategy = SupervisorStrategy.stoppingStrategy
-  implicit val timeout = Timeout(1 seconds)
+  implicit val timeout = Timeout(100 milliseconds)
 
   private val userRepository = context.watch(createUserRepository())
   private val eventSender = context.watch(createEventSender())
@@ -64,21 +65,29 @@ class UserAggregate extends PersistentActor with AtLeastOnceDelivery with ActorL
   }
 
   override def receiveCommand: Receive = {
-    case addUserCmd: AddUser =>
-      val origSender = sender
+    /*
+    Not the nicest solution, but it's non-blocking and sufficient to show the idea.
+    Other solutions would be;
+    - Have this UserAggregate also be the UserRepository, but that would mean mixing responsibilities
+    - Use the pipe to self but change behaviour so that intermediate commands are re-queued
+     */
+    case AddUserCmd(newUser) =>
+      val origSender = sender()
       val usersFuture = userRepository ? GetUsers
+      pipe(usersFuture.mapTo[Set[User]].map(GetUsersForwardResponse(origSender, _, newUser))) to self
 
-      usersFuture.onSuccess {
-        case users: Set[User] if users.exists(_.name == addUserCmd.user.name) =>
-          origSender ! UserExists(addUserCmd.user)
-        case users: Set[User] =>
-          persist(MsgSent(addUserCmd.user)) { persistedMsg =>
-            updateState(persistedMsg)
-            val addUserAnswer = userRepository ? addUserCmd
-            pipe(addUserAnswer) to origSender
-          }
+    case GetUsersForwardResponse(origSender, users, newUser) =>
+      if (users.exists(_.name == newUser.name)) {
+        origSender ! UserExistsResp(newUser)
+      } else {
+        persist(MsgAddUser(newUser)) { persistedMsg =>
+          updateState(persistedMsg)
+          origSender ! UserAddedResp(newUser)
+        }
       }
 
+    case ConfirmAddUser(deliveryId) =>
+      persist(MsgConfirmed(deliveryId))(updateState)
     case Confirm(deliveryId) =>
       persist(MsgConfirmed(deliveryId))(updateState)
   }
@@ -88,8 +97,9 @@ class UserAggregate extends PersistentActor with AtLeastOnceDelivery with ActorL
   }
 
   def updateState(evt: Evt): Unit = evt match {
-    case MsgSent(s) =>
-      deliver(eventSender.path)(deliveryId => Msg(deliveryId, s))
+    case MsgAddUser(u) =>
+      deliver(eventSender.path)(deliveryId => Msg(deliveryId, u))
+      deliver(userRepository.path)(deliveryId => AddUser(deliveryId, u))
     case MsgConfirmed(deliveryId) =>
       confirmDelivery(deliveryId)
   }

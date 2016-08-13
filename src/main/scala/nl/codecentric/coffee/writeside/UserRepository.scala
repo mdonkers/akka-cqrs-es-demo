@@ -18,8 +18,8 @@ package nl.codecentric.coffee.writeside
 
 import akka.actor.{ ActorLogging, Props }
 import akka.persistence.PersistentActor
-import nl.codecentric.coffee.domain._
-import nl.codecentric.coffee.writeside.UserRepository.GetUsers
+import nl.codecentric.coffee.domain.User
+import nl.codecentric.coffee.writeside.UserRepository.{ AddUser, ConfirmAddUser, GetUsers }
 
 /**
  * @author Miel Donkers (miel.donkers@codecentric.nl)
@@ -31,6 +31,8 @@ object UserRepository {
   def props(): Props = Props(new UserRepository())
 
   case object GetUsers
+  final case class AddUser(deliveryId: Long, user: User)
+  final case class ConfirmAddUser(deliveryId: Long)
 }
 
 class UserRepository extends PersistentActor with ActorLogging {
@@ -41,11 +43,11 @@ class UserRepository extends PersistentActor with ActorLogging {
   override def receiveCommand: Receive = {
     case GetUsers =>
       sender() ! users
-    case AddUser(user) =>
-      log.info(s"Adding new user with name; ${user.name}")
+    case AddUser(id, user) =>
+      log.info(s"Adding $id new user with name; ${user.name}")
       persist(user) { persistedUser =>
         receiveRecover(persistedUser)
-        sender() ! UserAdded(persistedUser)
+        sender() ! ConfirmAddUser(id)
       }
   }
 

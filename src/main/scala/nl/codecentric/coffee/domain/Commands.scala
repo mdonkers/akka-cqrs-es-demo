@@ -20,8 +20,8 @@ package nl.codecentric.coffee.domain
  * @author Miel Donkers (miel.donkers@codecentric.nl)
  */
 // Request objects
-final case class AddUser(user: User)
+final case class AddUserCmd(user: User)
 
 // Response objects
-final case class UserAdded(user: User)
-final case class UserExists(user: User)
+final case class UserAddedResp(user: User)
+final case class UserExistsResp(user: User)

@@ -46,7 +46,7 @@ class EventReceiver(userRepository: UserRepository) extends Consumer with ActorS
 
   override def receive: Receive = {
     case msg: CamelMessage =>
-      val origSender = sender
+      val origSender = sender()
       val body: Xor[Error, User] = decode[User](msg.bodyAs[String])
 
       body.fold({ error =>
