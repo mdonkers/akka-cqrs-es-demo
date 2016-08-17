@@ -16,14 +16,21 @@
 
 package nl.codecentric.coffee.readside
 
+import java.sql.Timestamp
+
+import nl.codecentric.coffee.domain.User
 import nl.codecentric.coffee.util.DatabaseService
+import slick.profile.SqlProfile.ColumnOption.SqlType
 
 /**
  * @author Miel Donkers (miel.donkers@codecentric.nl)
  */
-final case class UserEntity(id: Option[Long] = None, name: String) {
-  require(!name.isEmpty, "username.empty")
-}
+final case class UserEntity(
+  id: Option[Long] = None,
+  createdAt: Option[Timestamp] = None,
+  updatedAt: Option[Timestamp] = None,
+  userInfo: User
+)
 
 trait UserEntityTable {
 
@@ -32,9 +39,30 @@ trait UserEntityTable {
 
   class Users(tag: Tag) extends Table[UserEntity](tag, "CFE_USERS") {
     def id = column[Long]("ID", O.PrimaryKey, O.AutoInc)
-    def name = column[String]("NAME")
+    def createdAt =
+      column[Timestamp](
+        "CREATED_AT",
+        SqlType("timestamp not null default CURRENT_TIMESTAMP on insert CURRENT_TIMESTAMP")
+      )
+    def updatedAt =
+      column[Timestamp](
+        "UPDATED_AT",
+        SqlType("timestamp not null default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP")
+      )
+    def email = column[String]("EMAIL")
+    def firstName = column[String]("LAST_NAME")
+    def lastName = column[String]("FIRST_NAME")
 
-    def * = (id.?, name) <> (UserEntity.tupled, UserEntity.unapply)
+    def * =
+      (id.?, createdAt.?, updatedAt.?, (email, firstName, lastName)).shaped <> ({
+        case (id, createdAt, updatedAt, userInfo) =>
+          UserEntity(id, createdAt, updatedAt, User.tupled.apply(userInfo))
+      }, { ue: UserEntity =>
+        def f1(u: User) = User.unapply(u).get
+        Some((ue.id, ue.createdAt, ue.updatedAt, f1(ue.userInfo)))
+      })
+
+    def idx_user = index("idx_user", email, unique = true)
   }
 
   protected val users = TableQuery[Users]

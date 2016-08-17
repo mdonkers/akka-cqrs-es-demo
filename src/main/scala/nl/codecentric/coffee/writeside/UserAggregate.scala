@@ -77,7 +77,7 @@ class UserAggregate extends PersistentActor with AtLeastOnceDelivery with ActorL
       pipe(usersFuture.mapTo[Set[User]].map(GetUsersForwardResponse(origSender, _, newUser))) to self
 
     case GetUsersForwardResponse(origSender, users, newUser) =>
-      if (users.exists(_.name == newUser.name)) {
+      if (users.exists(_.email == newUser.email)) {
         origSender ! UserExistsResp(newUser)
       } else {
         persist(MsgAddUser(newUser)) { persistedMsg =>

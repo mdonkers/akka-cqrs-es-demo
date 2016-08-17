@@ -44,7 +44,7 @@ class UserRepository extends PersistentActor with ActorLogging {
     case GetUsers =>
       sender() ! users
     case AddUser(id, user) =>
-      log.info(s"Adding $id new user with name; ${user.name}")
+      log.info(s"Adding $id new user with email; ${user.email}")
       persist(user) { persistedUser =>
         receiveRecover(persistedUser)
         sender() ! ConfirmAddUser(id)

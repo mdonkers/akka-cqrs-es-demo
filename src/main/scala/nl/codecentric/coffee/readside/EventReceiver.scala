@@ -56,11 +56,11 @@ class EventReceiver(userRepository: UserRepository) extends Consumer with ActorS
         log.info(
           "Event Received with id {} and for user: {}",
           msg.headers.getOrElse(RabbitMQConstants.MESSAGE_ID, ""),
-          user.name
+          user.email
         )
-        userRepository.createUser(UserEntity(name = user.name)).onComplete {
+        userRepository.createUser(UserEntity(userInfo = user)).onComplete {
           case scala.util.Success(_) => origSender ! Ack // Send ACK when storing User succeeded
-          case scala.util.Failure(t) => log.error(t, "Failed to persist user with name: {}", user.name)
+          case scala.util.Failure(t) => log.error(t, "Failed to persist user with email: {}", user.email)
         }
       })
     case _ => log.warning("Unexpected event received")

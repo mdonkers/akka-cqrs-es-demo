@@ -19,4 +19,6 @@ package nl.codecentric.coffee.domain
 /**
  * @author Miel Donkers (miel.donkers@codecentric.nl)
  */
-final case class User(name: String)
+final case class User(email: String, firstName: String, lastName: String) {
+  require(!email.isEmpty, "email.empty")
+}

@@ -33,7 +33,8 @@ class UserRepository(val databaseService: DatabaseService)(implicit executionCon
 
   def getUserById(id: Long): Future[Option[UserEntity]] = db.run(users.filter(_.id === id).result.headOption)
 
-  def getUserByName(name: String): Future[Option[UserEntity]] = db.run(users.filter(_.name === name).result.headOption)
+  def getUserByEmail(email: String): Future[Option[UserEntity]] =
+    db.run(users.filter(_.email === email).result.headOption)
 
   def createUser(user: UserEntity): Future[Long] = db.run((users returning users.map(_.id)) += user)
 

@@ -131,7 +131,7 @@ class UserService(userAggregate: ActorRef, userRepository: UserRepository, inter
   ))
   def usersGetAll = get {
     onComplete(userRepository.getUsers()) {
-      case Success(users) => complete(users.map(u => User(u.name)))
+      case Success(users) => complete(users.map(ue => ue.userInfo))
       case Failure(t) => complete(HttpResponse(StatusCodes.InternalServerError, entity = "Internal error: " + t))
     }
   }

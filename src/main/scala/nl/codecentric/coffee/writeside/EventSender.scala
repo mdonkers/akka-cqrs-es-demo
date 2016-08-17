@@ -49,7 +49,7 @@ class EventSender extends Actor with ActorLogging {
 
   override def receive: Receive = {
     case Msg(deliveryId, user) =>
-      log.info("Sending msg for user: {}", user.name)
+      log.info("Sending msg for user: {}", user.email)
       unconfirmed = unconfirmed.updated(deliveryId, sender().path)
       val headersMap = Map(RabbitMQConstants.MESSAGE_ID -> deliveryId, RabbitMQConstants.CORRELATIONID -> deliveryId)
       camelSender ! CamelMessage(user.asJson.noSpaces, headersMap)
