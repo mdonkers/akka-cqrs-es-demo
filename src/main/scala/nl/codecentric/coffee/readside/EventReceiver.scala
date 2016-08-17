@@ -53,14 +53,20 @@ class EventReceiver(userRepository: UserRepository) extends Consumer with ActorS
         log.error("Could not parse message: {}", msg)
         origSender ! Failure(error)
       }, { user =>
-        log.info(
-          "Event Received with id {} and for user: {}",
-          msg.headers.getOrElse(RabbitMQConstants.MESSAGE_ID, ""),
-          user.email
-        )
-        userRepository.createUser(UserEntity(userInfo = user)).onComplete {
-          case scala.util.Success(_) => origSender ! Ack // Send ACK when storing User succeeded
-          case scala.util.Failure(t) => log.error(t, "Failed to persist user with email: {}", user.email)
+        val messageId: Long = msg.headers.get(RabbitMQConstants.MESSAGE_ID) match {
+          case Some(id: Long) => id
+          case Some(id: String) => id.toLong
+          case _ => -1
+        }
+        log.info("Event Received with id {} and for user: {}", messageId, user.email)
+
+        userRepository.getUserByEmail(user.email).foreach {
+          case Some(_) => log.debug("User with email {} already exists")
+          case None =>
+            userRepository.createUser(UserEntity(messageSeqNr = messageId, userInfo = user)).onComplete {
+              case scala.util.Success(_) => origSender ! Ack // Send ACK when storing User succeeded
+              case scala.util.Failure(t) => log.error(t, "Failed to persist user with email: {}", user.email)
+            }
         }
       })
     case _ => log.warning("Unexpected event received")
